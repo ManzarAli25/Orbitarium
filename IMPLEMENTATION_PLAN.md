@@ -1,239 +1,219 @@
+Perfect question — because now, with the **MCP-based architecture** added, your project has evolved from “a cool visualization + API wrapper” into a **modular AI + automation ecosystem** for real-time satellite data intelligence and social engagement 🚀
 
-## 🧩 **Project Overview: "Orbitarium"**
-
-**Goal:** A platform + bot system that
-1️⃣ visualizes real-time satellite motion on an interactive globe,
-2️⃣ predicts potential orbit collisions or close approaches, and
-3️⃣ posts daily, auto-generated space insights to Reddit.
+Let’s lay out the **full updated project overview** step-by-step:
 
 ---
 
-# 1️⃣ INTERACTIVE VISUALIZATION (Frontend)
+# 🌌 **Orbitarium — Intelligent Satellite Tracking & Automation Platform**
 
-### 🪐 **What to visualize**
+### 🧠 **Overview**
 
-You have several possibilities from the `N2YOClient`:
+**Orbitarium** is an open-source system that combines **real-time satellite visualization**, **predictive modeling**, and **automated public engagement** using the N2YO API, CesiumJS, and the MCP (Model Context Protocol) framework.
 
-| N2YO Method                                  | Data You Can Visualize             | Description                               |
-| -------------------------------------------- | ---------------------------------- | ----------------------------------------- |
-| `get_objects_above()`                        | Satellite positions above a region | Real-time positions of visible satellites |
-| `get_positions()`                            | Predicted groundtrack              | Animate the satellite moving across Earth |
-| `get_tle()`                                  | Orbital path (from TLEs)           | Draw orbit path on globe                  |
-| `get_visual_passes()` / `get_radio_passes()` | Visibility over time               | Mark when a satellite will be visible     |
+It’s composed of modular services — each responsible for a specific domain — and orchestrated by an intelligent agent client that connects everything together.
 
 ---
 
-### 🌍 **How to visualize (interactive globe)**
+## 🧩 **System Architecture**
 
-Use **CesiumJS** or **Three.js + Globe.gl**.
-Both support 3D Earth + real-time plotting of satellites.
+```mermaid
+flowchart LR
+    subgraph N["🛰️ N2YO MCP Server"]
+        N1[get_objects_above()]
+        N2[get_tle()]
+        N3[get_positions()]
+    end
 
-#### 🔹 Option A — CesiumJS (most accurate, NASA-style)
+    subgraph R["🤖 Reddit MCP Server"]
+        R1[generate_post_content()]
+        R2[post_to_reddit()]
+    end
 
-* Built-in support for TLE-to-orbit rendering (via `satellite.js`).
-* You can render each satellite’s orbit arc and current position.
-* Use WebSocket or polling to update every 30 seconds.
+    subgraph C["🧩 Orbitarium Agent Client"]
+        C1[LLM Integration (OpenAI/Gemini)]
+        C2[Cron Scheduler / Daily Automation]
+        C3[Task Orchestrator]
+    end
 
-Example architecture:
+    subgraph V["🌍 Visualization Layer"]
+        V1[CesiumJS 3D Globe]
+        V2[Web Dashboard (Next.js / React)]
+    end
+
+    C3 --> N
+    C3 --> R
+    N --> V
+```
+
+---
+
+## 🏗️ **Main Components**
+
+### 1. 🛰️ **N2YO MCP Server**
+
+* Wraps your `N2YOClient` class into an MCP-compatible API.
+* Exposes tools like:
+
+  * `get_tle(sat_id)`
+  * `get_objects_above(lat, lng, alt)`
+  * `get_positions(...)`
+* Acts as a **data service** that any agent or app can consume.
+
+📍 **Purpose:** Provide structured satellite data (TLEs, positions, passes) to other systems.
+
+---
+
+### 2. 🤖 **Reddit MCP Server**
+
+* Handles Reddit automation using **PRAW** (Python Reddit API Wrapper).
+* Integrates with an **LLM (e.g. GPT-4 or Gemini)** to auto-generate engaging posts about satellites.
+* Exposes tools like:
+
+  * `generate_post_content(satellite_name, tle)`
+  * `post_to_reddit(subreddit, title, content)`
+
+📍 **Purpose:** Create and post nerdy daily content on subreddits like r/space or r/askscience.
+
+---
+
+### 3. 🧠 **Orbitarium Agent Client**
+
+* A single **MCP client** that connects to both servers.
+* Fetches live data from N2YO, uses the LLM to generate Reddit content, and posts it via the Reddit MCP.
+* Can be extended to integrate other APIs (Twitter, Discord, Mastodon, etc.).
+* Optionally runs **on a cron schedule** (daily automation).
+
+📍 **Purpose:** Acts as the **orchestrator and brain** of the system — automating workflows between multiple MCP servers.
+
+---
+
+### 4. 🌍 **Visualization Layer**
+
+* **CesiumJS 3D Globe** to visualize satellites and their orbits in real-time.
+* Connects to your `N2YO MCP` server via REST or WebSocket.
+* Optionally uses **Next.js** or **React** to serve a dashboard showing:
+
+  * Active satellites above an observer’s location
+  * Ground tracks and predicted orbits
+  * Collision probability overlays
+
+📍 **Purpose:** Provide an interactive global view of satellite motion and analytics.
+
+---
+
+### 5. ⚙️ **(Optional) Collision Predictor**
+
+A future module (can be integrated into N2YO MCP or a separate MCP service):
+
+* Uses **machine learning / physics-based models** to predict potential orbital conjunctions.
+* Could rely on:
+
+  * N2YO’s position data
+  * NASA or Celestrak catalog data
+* Core idea: compute **spatial proximity** and **relative velocity** between satellites → estimate “close approach” probabilities.
+
+📍 **Purpose:** Early warning system for possible orbital collisions.
+
+---
+
+## 🪐 **System Workflow Example**
+
+1. **Data Layer**
+
+   * N2YO MCP fetches new satellite data for the day.
+   * Sends positions, TLEs, or visibility passes.
+
+2. **AI Layer**
+
+   * The Orbitarium agent asks an LLM to summarize something like:
+
+     > “Write a short post about how ISS passes over NYC tonight.”
+
+3. **Social Layer**
+
+   * The Reddit MCP posts the generated content to `/r/space`.
+   * Logs post metadata (URL, timestamp, engagement stats).
+
+4. **Visualization**
+
+   * CesiumJS dashboard updates in real-time with ISS trajectory and other satellites overhead.
+
+---
+
+## 📁 **Directory Structure**
 
 ```
-Frontend (Next.js + CesiumJS)
-↓
-Backend (FastAPI / Flask)
-↓
-N2YOClient (fetches positions)
+orbitarium/
+│
+├── core/
+│   └── n2yo_client.py
+│
+├── mcp_servers/
+│   ├── n2yo_mcp_server.py
+│   ├── reddit_mcp_server.py
+│
+├── client/
+│   └── orbitarium_agent_client.py
+│
+├── web/
+│   ├── cesium_dashboard/   # CesiumJS + Next.js front-end
+│
+├── models/
+│   └── collision_predictor.py  # optional ML module
+│
+├── .env
+├── requirements.txt
+└── README.md
 ```
 
-#### 🔹 Option B — Globe.gl (simpler, quick prototype)
+---
+
+## 🧰 **Tech Stack**
+
+| Layer           | Technology                        | Purpose                    |
+| --------------- | --------------------------------- | -------------------------- |
+| Backend         | Python, FastMCP                   | Satellite & Reddit servers |
+| Client          | MCP Client SDK                    | Orchestrator agent         |
+| Visualization   | CesiumJS + Next.js                | Interactive 3D globe       |
+| ML / Prediction | Scikit-learn / PyTorch (optional) | Collision detection        |
+| Automation      | Cron / APScheduler                | Daily Reddit posting       |
+| LLM Integration | OpenAI API / Gemini API           | Content generation         |
+
+---
+
+## ⚙️ **Example Daily Automation Flow**
 
 ```bash
-npm install globe.gl satellite.js
-```
-
-Example snippet:
-
-```js
-import Globe from 'globe.gl';
-import * as satellite from 'satellite.js';
-
-const globe = Globe()(document.getElementById('globe'))
-  .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
-
-fetch('/api/above')  // your backend endpoint using N2YOClient.get_objects_above
-  .then(res => res.json())
-  .then(({ satellites }) => {
-    globe.pointsData(satellites.map(s => ({
-      lat: s.latitude,
-      lng: s.longitude,
-      size: 0.6,
-      color: 'orange',
-      label: s.name
-    })));
-  });
-```
-
-**💡 Nice enhancement:**
-Clicking a satellite can show its `tle`, predicted path (`get_positions`), and next visible pass.
-
----
-
-# 2️⃣ COLLISION PREDICTION (ML / Simulation Component)
-
-### 🎯 **Goal: Predict potential close approaches**
-
-You want to flag if two satellites will pass dangerously close (< X km).
-
----
-
-### 🧠 **Approach A — Physics-based (recommended start)**
-
-* Use **TLE → orbital coordinates** conversion (`satellite.js` in JS or `sgp4` in Python).
-* Propagate each satellite’s orbit 24 hours into the future (e.g., every 10s).
-* Compute **Euclidean distances** between all pairs.
-* Flag when `distance < threshold (e.g., 5 km)`.
-
-```python
-from sgp4.api import Satrec, jday
-import numpy as np
-
-def predict_collision(tle1, tle2, hours=24, step=10):
-    sat1 = Satrec.twoline2rv(tle1['line1'], tle1['line2'])
-    sat2 = Satrec.twoline2rv(tle2['line1'], tle2['line2'])
-    jd, fr = jday(2025, 10, 8, 0, 0, 0)
-
-    min_dist = float('inf')
-    for t in range(0, hours * 3600, step):
-        e1, r1, v1 = sat1.sgp4(jd, fr + t / 86400)
-        e2, r2, v2 = sat2.sgp4(jd, fr + t / 86400)
-        if e1 == 0 and e2 == 0:
-            dist = np.linalg.norm(np.array(r1) - np.array(r2))
-            min_dist = min(min_dist, dist)
-    return min_dist < 5  # collision threshold
-```
-
-You can fetch current TLEs for all “above” satellites from N2YO and check close approaches.
-
----
-
-### 🤖 **Approach B — ML-based (optional, advanced)**
-
-Train a model to predict potential close approaches using features such as:
-
-* `altitude difference`
-* `velocity difference`
-* `relative inclination`
-* `historical near misses`
-
-You could use:
-
-* **Isolation Forest** for anomaly detection (unusual orbit intersections)
-* **RandomForestClassifier** for binary “will-collide / won’t-collide” predictions
-* **LSTM** for sequence-based trajectory prediction (if you have historical telemetry)
-
-**However**, since N2YO gives limited samples, a physics-based model (SGP4) is more accurate and interpretable initially.
-
----
-
-### ⚙️ **Pipeline**
-
-```
-get_objects_above(lat, lng, alt)
-  ↓
-get_tle() for each satellite
-  ↓
-simulate orbits via SGP4
-  ↓
-compute pairwise distances
-  ↓
-visualize "red arcs" for possible collisions on globe
+🕒 Every day at 10 AM UTC
+   ↓
+🤖 Orbitarium Agent wakes up
+   ↓
+🛰️ Calls N2YO MCP → get random visible satellite
+   ↓
+💬 Calls LLM → generate nerdy post about it
+   ↓
+🚀 Calls Reddit MCP → post to r/space
+   ↓
+✅ Logs URL and satellite metadata
 ```
 
 ---
 
-# 3️⃣ REDDIT BOT (LLM + N2YO Integration)
+## 🧩 **Why the Multi-Server Architecture Works**
 
-### 💬 **Goal:** Post a daily satellite-related insight on Reddit.
-
----
-
-### 🔹 Step 1 — Reddit Bot Setup
-
-Use `praw` (Python Reddit API Wrapper):
-
-```bash
-pip install praw
-```
-
-```python
-import praw
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-reddit = praw.Reddit(
-    client_id=os.getenv("REDDIT_CLIENT_ID"),
-    client_secret=os.getenv("REDDIT_SECRET"),
-    user_agent="orbitarium-bot",
-    username=os.getenv("REDDIT_USERNAME"),
-    password=os.getenv("REDDIT_PASSWORD"),
-)
-```
+| Benefit                       | Description                                                         |
+| ----------------------------- | ------------------------------------------------------------------- |
+| 🧠 **Separation of concerns** | N2YO, Reddit, ML — each isolated in its own server.                 |
+| 🔐 **Secure API keys**        | No cross-leak of Reddit vs N2YO credentials.                        |
+| 🚀 **Scalable**               | Each service can scale independently (microservices style).         |
+| 🔄 **Interoperable**          | Any other MCP client (LLM, CLI, app) can use your servers.          |
+| 🔧 **Extensible**             | Add new tools (e.g., “post_to_twitter”, “fetch_iss_stream”) easily. |
 
 ---
 
-### 🔹 Step 2 — Generate Nerdy Satellite Post
+## 🌟 **Potential Extensions**
 
-Use your `N2YOClient` to fetch a random satellite’s TLE or visible pass and combine with an LLM like OpenAI GPT or Gemini.
-
-Example:
-
-```python
-from openai import OpenAI
-import random
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-satellites = n2yo.get_objects_above(lat=40.7, lng=-74.0, alt=10)['satellites']
-random_sat = random.choice(satellites)
-tle = n2yo.get_tle(random_sat['id'])
-
-prompt = f"""
-Write a short, nerdy Reddit post about the satellite "{random_sat['name']}".
-Include its launch date ({random_sat['launch_date']}) and something interesting about its orbit using this TLE:
-{tle['tle']}
-Make it sound fun but scientific.
-"""
-
-post = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role":"user","content":prompt}])
-text = post.choices[0].message.content
-
-reddit.subreddit("space").submit(title=f"Satellite Spotlight: {random_sat['name']}", selftext=text)
-```
-
-You can run this daily with a **cron job** or **GitHub Action**.
-
----
-
-# 🧠 Putting It All Together
-
-| Component           | Tech Stack                     | Purpose                                    |
-| ------------------- | ------------------------------ | ------------------------------------------ |
-| Visualization       | Next.js + CesiumJS or Globe.gl | Interactive 3D satellite globe             |
-| Backend API         | FastAPI or Flask + N2YOClient  | Fetch & serve satellite data               |
-| Collision Predictor | Python (SGP4 + NumPy)          | Simulate orbits & detect proximity events  |
-| Reddit Bot          | Python + PRAW + LLM API        | Auto-generate & post daily satellite facts |
-| Optional DB         | MongoDB / PostgreSQL           | Cache TLEs, logs, predictions              |
-
----
-
-# 🚀 Suggested Roadmap
-
-1️⃣ **Phase 1:** Backend setup → N2YOClient + Flask REST API
-2️⃣ **Phase 2:** Globe visualization with live satellite tracking
-3️⃣ **Phase 3:** Add collision simulation backend
-4️⃣ **Phase 4:** Reddit Bot automation with OpenAI API
-5️⃣ **Phase 5:** Deploy frontend + backend (e.g., on Vercel + Render)
-
----
-
-Would you like me to **sketch the architecture diagram** (showing data flow between these components)? It’ll help you see how N2YO, SGP4, LLM, and Reddit fit together.
+* Add a **Twitter MCP server** for cross-posting.
+* Introduce a **Discord MCP bot** to notify users of visible passes.
+* Implement **historical trajectory replay** on Cesium.
+* Connect to **NASA’s Open Data API** for event-based triggers (e.g., launches).
