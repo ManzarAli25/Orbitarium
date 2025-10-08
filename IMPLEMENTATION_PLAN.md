@@ -1,9 +1,3 @@
-Perfect question — because now, with the **MCP-based architecture** added, your project has evolved from “a cool visualization + API wrapper” into a **modular AI + automation ecosystem** for real-time satellite data intelligence and social engagement 🚀
-
-Let’s lay out the **full updated project overview** step-by-step:
-
----
-
 # 🌌 **Orbitarium — Intelligent Satellite Tracking & Automation Platform**
 
 ### 🧠 **Overview**
